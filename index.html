@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت استیکر هنرجویان</title>
+    <style>
+        /* استایل‌های اصلی */
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+        }
+        .container {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 90%;
+            max-width: 800px;
+            margin: 0 auto;
+            margin-top: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-container {
+            background: #fff;
+            padding: 15px;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold; /* فونت دکمه‌ها بولد شد */
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .notification {
+            padding: 10px;
+            background: #ff0000;
+            color: #fff;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .notification:hover {
+            background: #cc0000;
+        }
+        .school, .student {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            position: relative;
+            background: #fff;
+        }
+        .school h2 {
+            margin: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+        .student {
+            margin-top: 10px;
+            border-width: 2px;
+            border-style: solid;
+        }
+        .student h3 {
+            margin: 0;
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .total-stickers {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .student-link {
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .student-link:hover {
+            color: #0056b3;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        #totalStickersAllSchools {
+            font-weight: bold;
+            margin-top: 20px;
+            display: inline-block;
+        }
+        #backup-restore {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #backup-restore button {
+            width: auto;
+        }
+        .delete-button, #delete-all-button {
+            width: 3cm;
+            height: 1cm;
+            background-color: #cccccc;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+        .delete-button:hover, #delete-all-button:hover {
+            background-color: #b3b3b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h1>مدیریت استیکر هنرجویان</h1>
+            <div class="form-group">
+                <label for="schoolName">نام آموزشگاه:</label>
+                <input type="text" id="schoolName" placeholder="نام آموزشگاه را وارد کنید">
+            </div>
+            <div class="form-group">
+                <label for="studentName">نام هنرجو:</label>
+                <input type="text" id="studentName" placeholder="نام هنرجو را وارد کنید">
+            </div>
+            <div class="form-group">
+                <label for="stickersCount">تعداد استیکرهای دریافت شده:</label>
+                <input type="number" id="stickersCount" placeholder="تعداد استیکرها را وارد کنید">
+            </div>
+            <button onclick="addSticker()">افزودن استیکر</button>
+            <div id="notificationsContainer"></div>
+            <div id="totalStickersAllSchools">تعداد کل استیکرهای دریافت شده توسط همه‌ی آموزشگاه‌ها:</div>
+            <button id="delete-all-button" onclick="confirmDeleteAll()">حذف همه‌ی اطلاعات</button>
+        </div>
+        <div id="schoolsContainer"></div>
+
+        <!-- بخش پشتیبان‌گیری و بازگردانی -->
+        <div id="backup-restore">
+            <button onclick="backupData()">پشتیبان‌گیری</button>
+            <input type="file" id="restoreFile" />
+            <button onclick="restoreData()">بازگردانی</button>
+        </div>
+    </div>
+
+    <!-- پنجره پاپ‌آپ (Modal) -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h1 id="modalStudentName"></h1>
+            <div class="form-group">
+                <label>استیکرهای این جلسه:</label>
+                <input type="number" id="modalSessionStickers">
+            </div>
+            <div class="form-group">
+                <label>مجموع استیکرها:</label>
+                <input type="number" id="modalTotalStickers" readonly>
+            </div>
+            <button onclick="updateStickers()">بروزرسانی استیکرها</button>
+        </div>
+    </div>
+
+    <script>
+        let schools = {};
+        let currentSchoolName = '';
+        let currentStudentName = '';
+        let notifications = JSON.parse(localStorage.getItem('notifications')) || []; // بارگذاری نوتیفیکیشن‌ها از localStorage
+        let colors = {}; // شیء برای ذخیره رنگ‌ها برای هنرجویان
+
+        function addSticker() {
+            const schoolName = document.getElementById('schoolName').value;
+            const studentName = document.getElementById('studentName').value;
+            const stickersCount = parseInt(document.getElementById('stickersCount').value);
+    
+            if (!schoolName || !studentName || !stickersCount) {
+                alert('لطفاً تمامی فیلدها را پر کنید');
+                return;
+            }
+
+            if (!schools[schoolName]) {
+                schools[schoolName] = {
+                    totalStickers: 0,
+                    students: {}
+                };
+            }
+
+            if (!schools[schoolName].students[studentName]) {
+                schools[schoolName].students[studentName] = {
+                    sessionStickers: 0,
+                    totalStickers: 0
+                };
+            }
+
+            let student = schools[schoolName].students[studentName];
+            student.sessionStickers += stickersCount;
+            student.totalStickers += stickersCount;
+            schools[schoolName].totalStickers += stickersCount;
+
+            // بررسی کنید که آیا تعداد استیکرهای جلسه به 10 یا بیشتر رسیده است و در این صورت نوتیفیکیشن اضافه کنید
+            if (student.sessionStickers >= 10 && !notifications.some(n => n.studentName === studentName && n.schoolName === schoolName)) {
+                notifications.push({ schoolName, studentName });
+                localStorage.setItem('notifications', JSON.stringify(notifications));
+            }
+
+            updateDisplay();
+            saveData();
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('schoolsContainer');
+            container.innerHTML = '';
+            let totalStickersAllSchools = 0;
+
+            for (const schoolName in schools) {
+                const schoolDiv = document.createElement('div');
+                schoolDiv.className = 'school';
+                schoolDiv.innerHTML = `
+                    <h2>${schoolName}</h2>
+                    <p>تعداد کل استیکرهای این آموزشگاه: ${schools[schoolName].totalStickers}</p>
+                `;
+
+                const students = schools[schoolName].students;
+                for (const studentName in students) {
+                    const studentDiv = document.createElement('div');
+                    studentDiv.className = 'student';
+
+                    // اگر رنگی برای هنرجو تنظیم نشده باشد، یک رنگ تصادفی ایجاد و ذخیره می‌کنیم
+                    if (!colors[studentName]) {
+                        colors[studentName] = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+                    }
+                    studentDiv.style.borderColor = colors[studentName];
+
+                    studentDiv.innerHTML = `
+                        <h3 onclick="openModal('${schoolName}', '${studentName}')">${studentName}</h3>
+                        <p>استیکرهای این جلسه: ${students[studentName].sessionStickers}</p>
+                        <p>مجموع استیکرها: ${students[studentName].totalStickers}</p>
+                    `;
+
+                    // دکمه حذف هنرجو
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'delete-button';
+                    deleteButton.textContent = 'حذف هنرجو';
+                    deleteButton.onclick = () => deleteStudent(schoolName, studentName);
+
+                    studentDiv.appendChild(deleteButton);
+                    schoolDiv.appendChild(studentDiv);
+                }
+
+                // دکمه حذف آموزشگاه
+                const deleteSchoolButton = document.createElement('button');
+                deleteSchoolButton.className = 'delete-button';
+                deleteSchoolButton.textContent = 'حذف آموزشگاه';
+                deleteSchoolButton.onclick = () => deleteSchool(schoolName);
+
+                schoolDiv.appendChild(deleteSchoolButton);
+                container.appendChild(schoolDiv);
+
+                totalStickersAllSchools += schools[schoolName].totalStickers;
+            }
+
+            document.getElementById('totalStickersAllSchools').textContent = `تعداد کل استیکرهای دریافت شده توسط همه‌ی آموزشگاه‌ها: ${totalStickersAllSchools}`;
+
+            displayNotifications();
+        }
+
+        function openModal(schoolName, studentName) {
+            currentSchoolName = schoolName;
+            currentStudentName = studentName;
+
+            const student = schools[schoolName].students[studentName];
+
+            document.getElementById('modalStudentName').textContent = studentName;
+            document.getElementById('modalSessionStickers').value = student.sessionStickers;
+            document.getElementById('modalTotalStickers').value = student.totalStickers;
+
+            document.getElementById('studentModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('studentModal').style.display = 'none';
+        }
+
+        function updateStickers() {
+            const newSessionStickers = parseInt(document.getElementById('modalSessionStickers').value);
+
+            const student = schools[currentSchoolName].students[currentStudentName];
+            const difference = newSessionStickers - student.sessionStickers;
+
+            student.sessionStickers = newSessionStickers;
+            student.totalStickers += difference;
+            schools[currentSchoolName].totalStickers += difference;
+
+            // اضافه کردن نوتیفیکیشن اگر استیکرهای جلسه به 10 یا بیشتر رسیده باشد
+            if (student.sessionStickers >= 10 && !notifications.some(n => n.studentName === currentStudentName && n.schoolName === currentSchoolName)) {
+                notifications.push({ schoolName: currentSchoolName, studentName: currentStudentName });
+                localStorage.setItem('notifications', JSON.stringify(notifications));
+            }
+
+            closeModal();
+            updateDisplay();
+            saveData();
+        }
+
+        function deleteStudent(schoolName, studentName) {
+            if (confirm(`آیا مطمئن هستید که می‌خواهید هنرجوی ${studentName} را حذف کنید؟`)) {
+                // کم کردن تعداد استیکرهای هنرجو از آموزشگاه و تعداد کل
+                let studentStickers = schools[schoolName].students[studentName].totalStickers;
+                schools[schoolName].totalStickers -= studentStickers;
+         
+                // حذف هنرجو
+                delete schools[schoolName].students[studentName];
+        
+        updateDisplay();
+        saveData();
+    }
+}
+
+
+        function deleteSchool(schoolName) {
+            if (confirm(`آیا مطمئن هستید که می‌خواهید آموزشگاه ${schoolName} را حذف کنید؟`)) {
+                delete schools[schoolName];
+                updateDisplay();
+                saveData();
+            }
+        }
+
+        function confirmDeleteAll() {
+            if (confirm('آیا مطمئن هستید که می‌خواهید تمامی اطلاعات را حذف کنید؟ این عملیات قابل بازگشت نیست.')) {
+                const confirmation = prompt('لطفاً برای تأیید "حذف" را تایپ کنید:');
+                if (confirmation === 'حذف') {
+                    schools = {};
+                    notifications = [];
+                    localStorage.removeItem('schools');
+                    localStorage.removeItem('notifications');
+                    updateDisplay();
+                } else {
+                    alert('عملیات حذف لغو شد.');
+                }
+            }
+        }
+
+        function displayNotifications() {
+            const notificationsContainer = document.getElementById('notificationsContainer');
+            notificationsContainer.innerHTML = '';
+
+            notifications.forEach(notification => {
+                const notificationDiv = document.createElement('div');
+                notificationDiv.className = 'notification';
+                notificationDiv.textContent = `هنرجوی ${notification.studentName} از آموزشگاه ${notification.schoolName} استیکرهای جلسه خود را به ۱۰ یا بیشتر رسانده است!`;
+
+                // حذف اعلان از لیست پس از کلیک
+                notificationDiv.onclick = () => {
+                    notifications = notifications.filter(n => n !== notification);
+                    localStorage.setItem('notifications', JSON.stringify(notifications));
+                    displayNotifications();
+                };
+
+                notificationsContainer.appendChild(notificationDiv);
+            });
+        }
+
+        function saveData() {
+            localStorage.setItem('schools', JSON.stringify(schools));
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+        }
+
+        function loadData() {
+            const savedSchools = localStorage.getItem('schools');
+            const savedNotifications = localStorage.getItem('notifications');
+            const savedColors = localStorage.getItem('colors');
+
+            if (savedSchools) {
+                schools = JSON.parse(savedSchools);
+            }
+
+            if (savedNotifications) {
+                notifications = JSON.parse(savedNotifications);
+            }
+
+            if (savedColors) {
+                colors = JSON.parse(savedColors);
+            }
+
+            updateDisplay();
+        }
+
+        function backupData() {
+            const dataStr = JSON.stringify({ schools, colors, notifications });
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const downloadLink = document.createElement('a');
+            downloadLink.href = URL.createObjectURL(dataBlob);
+            downloadLink.download = 'backup.json';
+            downloadLink.click();
+        }
+
+        function restoreData() {
+            const fileInput = document.getElementById('restoreFile');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const restoredData = JSON.parse(e.target.result);
+                    schools = restoredData.schools || {};
+                    colors = restoredData.colors || {};
+                    notifications = restoredData.notifications || [];
+                    updateDisplay();
+                    saveData();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
